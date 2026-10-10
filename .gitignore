@@ -40,6 +40,8 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
+# Yarn is the only package manager; never commit an npm lockfile
+package-lock.json
 
 # fastlane
 #
@@ -73,3 +75,29 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Environment files (keep documented templates)
+.env
+.env.*
+!.env.example
+
+# Other package managers (Yarn only)
+pnpm-lock.yaml
+bun.lock
+bun.lockb
+
+# Editors / OS
+.vscode/
+*.swp
+*~
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Build artefacts distributed outside Git
+*.apk
+*.aab
+android/app/release/
+android/app/src/main/assets/index.android.bundle

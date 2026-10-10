@@ -1,97 +1,36 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Learning Dashboard
 
-# Getting Started
+React Native (CLI, TypeScript): sign in, browse courses, mark lessons complete, read cached content offline.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
-
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
+**Run**
 
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+yarn install --frozen-lockfile && (cd ios && bundle exec pod install)
+yarn start && yarn android          # or yarn ios
+yarn test && yarn lint && yarn tsc --noEmit
+cd android && ./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
 ```
 
-## Step 2: Build and run your app
+**Mock credentials:** any valid email + `Password@123`; `empty@test.com` shows an empty dashboard. Access tokens expire after 60 s; in debug builds, long-press "My Courses" for the dev menu.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## 1. Architecture
 
-### Android
+Pragmatic MVVM with a repository layer: **screens → Zustand stores → repositories → axios clients + MMKV storage adapter**, plus pure domain functions (validation, progress, completion). Folders follow the dependency direction `shared → domain → infrastructure → features → app`, enforced by ESLint import rules: screens never touch HTTP or storage, stores are testable without React, repositories run against an in-memory adapter and fake APIs, and features never import the composition root (stores and connectivity arrive through React context). A small session lifecycle orders restore, login, sign-out and expiry. Debugging: dev-only logger, dev menu, error boundary, typed errors, React Native DevTools.
 
-```sh
-# Using npm
-npm run android
+## 2. Offline Support
 
-# OR using Yarn
-yarn android
-```
+Courses and lessons are cached per user in MMKV as versioned envelopes validated on read. The cache is read before the dashboard mounts, then refreshed; a failed refresh keeps cached data and shows a banner. Progress is derived from a lesson list only when it is complete. Completion is online-only: optimistic update, server confirmation written to the cache, rollback with Retry on failure. No offline-write queue by design.
 
-### iOS
+## 3. Security
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+The session lives only in Keychain/Keystore (`react-native-keychain`, app-specific service), never in MMKV or UI state; an in-memory session context feeds the request interceptor. The protected axios client shares one refresh per session, retries each request once, rejects stale-session requests and ends the session on an invalid refresh token. Keychain writes are serialized so a late save cannot resurrect a signed-out session, and a failed secure cleanup blocks login until it succeeds. Login validation: valid email plus a non-empty password up to 128 characters, no composition rules. The mock provides no real security.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## 4. Scale
 
-```sh
-bundle install
-```
+For 1M users and hundreds of courses: cursor pagination and conditional requests; a server-state cache (TanStack Query) over the repositories; SQLite/WatermelonDB behind the storage adapter; FlashList; crash and API monitoring; CI gates.
 
-Then, and every time you update your native dependencies, run:
+## 5. Second Platform
 
-```sh
-bundle exec pod install
-```
+This submission is React Native, so the one codebase already runs on both Android and iOS. Rebuilt natively it would use the same layers and contracts: Android with Jetpack Compose, ViewModel + StateFlow, Room, Retrofit/OkHttp with an authenticator for refresh and Keystore; iOS with SwiftUI, `@Observable` view models, SwiftData, URLSession async/await with an actor for single-flight refresh and Keychain Services.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Limitations: mock state resets with app data; the release APK uses the template debug signing.
