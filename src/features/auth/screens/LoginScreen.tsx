@@ -108,7 +108,7 @@ function LoginForm() {
   return (
     <AppScreen edges={['top', 'bottom']} padded>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
         <ScrollView

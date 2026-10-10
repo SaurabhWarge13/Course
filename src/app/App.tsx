@@ -5,7 +5,6 @@ import { AuthStoreProvider } from '../features/auth/authStoreContext';
 import { CoursesStoreProvider } from '../features/courses/coursesStoreContext';
 import { ConnectivityProvider } from '../infrastructure/network/useNetworkStatus';
 import { RootNavigator } from '../navigation/RootNavigator';
-import { colors } from '../ui/theme';
 import { ErrorBoundary } from './ErrorBoundary';
 import { authStore, connectivity, coursesStore, lifecycle } from './stores';
 
@@ -16,7 +15,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" />
       <ConnectivityProvider connectivity={connectivity}>
         <AuthStoreProvider store={authStore}>
           <CoursesStoreProvider store={coursesStore}>
